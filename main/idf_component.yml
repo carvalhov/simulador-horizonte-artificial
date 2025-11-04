@@ -1,0 +1,11 @@
+dependencies:
+  esp-idf-lib/esp_idf_lib_helpers:
+    version: '*'
+  esp-idf-lib/i2cdev:
+    version: '*'
+  esp-idf-lib/mpu6050:
+    version: '*'
+  espressif/esp_lcd_gc9a01: ^2.0.0
+description: default
+version: 1.0.0
+
