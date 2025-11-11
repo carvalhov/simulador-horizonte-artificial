@@ -14,6 +14,7 @@
 #include "esp_lcd_panel_io_interface.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
+//#include "esp_lcd_panel_vendor.h"
 #include "unity.h"
 #include "unity_test_runner.h"
 #include "esp_lcd_gc9a01.h"
@@ -26,7 +27,7 @@ float roll = 0.0f;
 
 #define TEST_LCD_HOST               SPI2_HOST
 #define TEST_LCD_H_RES              (240)
-#define TEST_LCD_V_RES              (240)
+#define TEST_LCD_V_RES              (320)
 #define TEST_LCD_BIT_PER_PIXEL      (16)
 //#define TEST_LCD_BYTE_PER_PIXEL      (TEST_LCD_BIT_PER_PIXEL/8)
 #define TEST_PIN_NUM_LCD_CS         (GPIO_NUM_16)
@@ -36,9 +37,9 @@ float roll = 0.0f;
 #define TEST_PIN_NUM_LCD_DC         (GPIO_NUM_17)
 
 // Cores em RGB565
-#define COLOR_SKY   0x1F9F    // Azul/Céu
-#define COLOR_EARTH 0x82E3    // Marrom/Terra
-#define COLOR_WHITE 0xFFFF    // Branco/Ticks
+#define COLOR_SKY   0x4AD4   // Azul/Céu
+#define COLOR_EARTH 0xBE03    // Marrom/Terra
+#define COLOR_WHITE 0x0000    // Branco/Ticks
 
 
 #define TEST_DELAY_TIME_MS          (3000)
@@ -55,37 +56,7 @@ IRAM_ATTR static bool test_notify_refresh_ready(esp_lcd_panel_io_handle_t panel_
     xSemaphoreGiveFromISR(refresh_finish, &need_yield);
     return (need_yield == pdTRUE);
 }
-/*
-static void test_draw_bitmap(esp_lcd_panel_handle_t panel_handle)
-{
-    refresh_finish = xSemaphoreCreateBinary();
-    TEST_ASSERT_NOT_NULL(refresh_finish);
 
-    uint16_t row_line = TEST_LCD_V_RES / TEST_LCD_BIT_PER_PIXEL;
-    uint8_t byte_per_pixel = TEST_LCD_BIT_PER_PIXEL / 8;
-    uint8_t *color = (uint8_t *)heap_caps_calloc(1, row_line * TEST_LCD_H_RES * byte_per_pixel, MALLOC_CAP_DMA);
-    TEST_ASSERT_NOT_NULL(color);
-
-    for (int j = 0; j < TEST_LCD_BIT_PER_PIXEL ; j++) {    
-        for (int i = 0; i < row_line * TEST_LCD_H_RES; i++) {
-            for (int k = 0; k < byte_per_pixel; k++) {
-                color[i * byte_per_pixel + k] = (SPI_SWAP_DATA_TX(BIT(j), TEST_LCD_BIT_PER_PIXEL) >> (k * 8)) & 0xff;
-            }
-        }
-        TEST_ESP_OK(esp_lcd_panel_draw_bitmap(panel_handle, 0, j * row_line, TEST_LCD_H_RES, (j + 1) * row_line, color));
-        xSemaphoreTake(refresh_finish, portMAX_DELAY);
-    }
-    free(color);
-    vSemaphoreDelete(refresh_finish);
-}
-
-*/
-/*
- * Exemplo de tarefa que atualiza o horizonte periodicamente.
- * Use os sensores para preencher pitch/roll reais (MPU6050 etc.).
- */
-
-// referência: horizonte centrado em (cx, cy)
 static void draw_line(uint16_t *color_buf, int x0, int y0, int x1, int y1, uint16_t color) {
     int dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
     int dy = -abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
@@ -176,8 +147,9 @@ void draw_artificial_horizon(esp_lcd_panel_handle_t panel_handle, float pitch_de
     vSemaphoreDelete(refresh_finish);
 }
 
-TEST_CASE("test gc9a01 to draw color bar with SPI interface", "[gc9a01][spi]")
+void run_display(void)
 {
+    
     ESP_LOGI(TAG, "Initialize SPI bus");
     const spi_bus_config_t buscfg = GC9A01_PANEL_BUS_SPI_CONFIG(TEST_PIN_NUM_LCD_PCLK, TEST_PIN_NUM_LCD_DATA0,
                                     TEST_LCD_H_RES * 80 * TEST_LCD_BIT_PER_PIXEL / 8);
@@ -190,7 +162,7 @@ TEST_CASE("test gc9a01 to draw color bar with SPI interface", "[gc9a01][spi]")
     // Attach the LCD to the SPI bus
     TEST_ESP_OK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)TEST_LCD_HOST, &io_config, &io_handle));
 
-    ESP_LOGI(TAG, "Install gc9a01 panel driver");
+    ESP_LOGI(TAG, "Install panel driver");
     esp_lcd_panel_handle_t panel_handle = NULL;
     const esp_lcd_panel_dev_config_t panel_config = {
         .reset_gpio_num = TEST_PIN_NUM_LCD_RST,
@@ -203,7 +175,8 @@ TEST_CASE("test gc9a01 to draw color bar with SPI interface", "[gc9a01][spi]")
 #endif
         .bits_per_pixel = TEST_LCD_BIT_PER_PIXEL,
     };
-    TEST_ESP_OK(esp_lcd_new_panel_gc9a01(io_handle, &panel_config, &panel_handle));
+    
+    TEST_ESP_OK(esp_lcd_new_panel_st7789(io_handle, &panel_config, &panel_handle));
     TEST_ESP_OK(esp_lcd_panel_reset(panel_handle));
     TEST_ESP_OK(esp_lcd_panel_init(panel_handle));
     TEST_ESP_OK(esp_lcd_panel_invert_color(panel_handle, true));
@@ -219,7 +192,7 @@ TEST_CASE("test gc9a01 to draw color bar with SPI interface", "[gc9a01][spi]")
     while (true) {
         mpu6050_get_pitch_roll (&pitch, &roll);
         draw_artificial_horizon (panel_handle, pitch, roll);
-        vTaskDelay(pdMS_TO_TICKS(50));
+        vTaskDelay(pdMS_TO_TICKS(30));
     }
     vTaskDelay(pdMS_TO_TICKS(TEST_DELAY_TIME_MS));
 
@@ -255,7 +228,7 @@ void tearDown(void)
     check_leak(before_free_32bit, after_free_32bit, "32BIT");
 }
 
-void tester(void)
+void drawer_init(void)
 {
-    unity_run_menu();    
+    run_display();    
 }

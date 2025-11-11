@@ -22,8 +22,8 @@ void mpu6050_get_pitch_roll(float *pitch, float *roll)
     mpu6050_rotation_t rotation = { 0 };
     
     static float pitch_est = 0.0f, roll_est = 0.0f;
-    const float alpha = 0.7f;  // peso do giroscópio
-    const float dt = 0.05f;     // tempo entre leituras (em s) — deve coincidir com o vTaskDelay()
+    const float alpha = 0.5f;  // peso do giroscópio
+    const float dt = 0.03f;     // tempo entre leituras (em s) — deve coincidir com o vTaskDelay()
 
     float ax, ay, az;
     float gx, gy, gz;
@@ -32,12 +32,12 @@ void mpu6050_get_pitch_roll(float *pitch, float *roll)
     ESP_ERROR_CHECK(mpu6050_get_motion(&dev, &accel, &rotation));
 
     az = accel.x;
-    ay = -accel.y;
-    ax = accel.z;
+    ay = accel.y;
+    ax = -accel.z;
 
     gz = rotation.x;
-    gy = -rotation.y;
-    gx = rotation.z;
+    gy = rotation.y;
+    gx = -rotation.z;
 
     // Normaliza vetor de aceleração
     float norm = sqrtf(ax*ax + ay*ay + az*az);
@@ -82,28 +82,8 @@ void mpu6050_test(void *pvParameters)
 
     ESP_ERROR_CHECK(mpu6050_init(&dev));
 
-    //ESP_LOGI(TAG, "Accel range: %d", dev.ranges.accel);
-    //ESP_LOGI(TAG, "Gyro range:  %d", dev.ranges.gyro);
     vTaskDelete(NULL);
-    /*
-    while (1)
-    {
-        float temp;
-        mpu6050_acceleration_t accel = { 0 };
-        mpu6050_rotation_t rotation = { 0 };
 
-        ESP_ERROR_CHECK(mpu6050_get_temperature(&dev, &temp));
-        ESP_ERROR_CHECK(mpu6050_get_motion(&dev, &accel, &rotation));
-
-        
-        ESP_LOGI(TAG, "**********************************************************************");
-        ESP_LOGI(TAG, "Acceleration: x=%.4f   y=%.4f   z=%.4f", accel.x, accel.y, accel.z);
-        ESP_LOGI(TAG, "Rotation:     x=%.4f   y=%.4f   z=%.4f", rotation.x, rotation.y, rotation.z);
-        ESP_LOGI(TAG, "Temperature:  %.1f", temp);
-        
-
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }*/
 }
 
 void gyro_init()

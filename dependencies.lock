@@ -68,7 +68,7 @@ dependencies:
   esp_lcd_gc9a01:
     dependencies: []
     source:
-      path: C:\Users\Adson\esp\ArtificialHorizon\components\esp_lcd_gc9a01
+      path: C:\Users\Adson\esp\simulador-horizonte-artificial\components\esp_lcd_gc9a01
       type: local
     version: 2.0.4
   espressif/cmake_utilities:
