@@ -2,3 +2,6 @@ build/
 sdkconfig
 sdkconfig.old
 dependencies
+.vscode/
+.devcontainer/
+managed_components/

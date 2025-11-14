@@ -16,7 +16,6 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "esp_check.h"
-
 #include "esp_lcd_gc9a01.h"
 
 static const char *TAG = "gc9a01";
