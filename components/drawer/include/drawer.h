@@ -1,6 +1,6 @@
 #ifndef DRAWER_H
 #define DRAWER_H
 
-void tester(void);
+void drawer_init(void);
 
 #endif
